@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Block Builder</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      color: white;
+      font-family: sans-serif;
+    }
+    .button {
+      padding: 5px 10px;
+      margin: 2px;
+      background: #444;
+      color: white;
+      border: 1px solid #aaa;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div>Selected Block:</div>
+    <button class="button" onclick="setBlockColor('green')">Grass</button>
+    <button class="button" onclick="setBlockColor('gray')">Stone</button>
+    <button class="button" onclick="setBlockColor('brown')">Dirt</button>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    let scene = new THREE.Scene();
+    let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    let renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    let controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.set(10, 10, 10);
+    controls.update();
+
+    // Grid floor
+    let gridHelper = new THREE.GridHelper(50, 50, 0x888888, 0x444444);
+    scene.add(gridHelper);
+
+    // Lighting
+    let ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    let directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(10, 10, 5);
+    scene.add(directionalLight);
+
+    // Block management
+    let selectedColor = 'green';
+    function setBlockColor(color) {
+      selectedColor = color;
+    }
+
+    // Place blocks on click
+    window.addEventListener('click', function(event) {
+      const mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObject(gridHelper, true);
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        const x = Math.floor(point.x + 0.5);
+        const y = 0.5;
+        const z = Math.floor(point.z + 0.5);
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshLambertMaterial({ color: selectedColor });
+        const cube = new THREE.Mesh(geometry, material);
+        cube.position.set(x, y, z);
+        scene.add(cube);
+      }
+    });
+
+    // Render loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
